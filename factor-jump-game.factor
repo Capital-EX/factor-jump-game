@@ -10,7 +10,11 @@ IN: jump-game
 : unpair ( p -- x y )
     [ first ] [ second ] bi ;
 
+: all-true? ( seq -- ? )
+    [ ] all? ;
 
+: any-true? ( seq -- ? )
+    [ ] any? ;
 
 GENERIC: draw ( drawable -- )
 GENERIC: update ( updatable -- )
@@ -54,6 +58,9 @@ TUPLE: entity
 : change-position-y ( ent quot -- ent )
     '[ [ _ call( ... x -- x ) ] change-y ] change-position ;
 
+: change-position-x ( ent quot -- ent )
+    '[ [ _ call( ... x -- x ) ] change-x ] change-position ;
+
 : get-position-and-size ( ent -- pos size )
     [ position>> ] [ size>> ] bi ;
 
@@ -71,10 +78,19 @@ TUPLE: entity
 
 TUPLE: player < entity
     { on-ground boolean }
-    { y-vel float } ;
+    { y-vel float }
+    { x-vel float } ;
+
+CONSTANT: PLAYER-SPEED 8
+CONSTANT: JUMP-FORCE 30
 
 : <player> ( -- player )
-    half-screen-size 32 32 <Vector2> f 0.0 player boa ;
+    player new
+        half-screen-size >>position
+        32 32 <Vector2>  >>size
+        f                >>on-ground
+        0.0              >>y-vel
+        0.0              >>x-vel ;
 
 M: player draw
     get-position-and-size BLUE draw-rectangle-v ;
@@ -100,8 +116,8 @@ M: player draw
 : fall ( player -- player )
     apply-velocity apply-gravity ;
 
-: ?fall ( player -- ? )
-    dup on-ground>> not [ fall ] when on-ground? ;
+: ?fall ( player -- player )
+    dup dup on-ground>> not [ fall ] when on-ground? >>on-ground ;
 
 : separate-from-ground ( player -- )
     dup get-distance-from-ground '[ _ - ] change-position-y drop ;
@@ -115,21 +131,51 @@ M: player draw
 : jump ( player -- )
     -30 >>y-vel f >>on-ground drop ;
 
-: ?jump ( player -- )
-    [ jumping? ] [ jump ] smart-when* ;
+: ?jump ( player -- player )
+    dup [ jumping? ] [ jump ] smart-when* ;
+
+: released-and-down? ( key key -- ? )
+    [ is-key-released ] [ is-key-down ] bi* and ;
+
+: all-keys-up? ( seq -- ? )
+    [ is-key-up ] map all-true? ;
+
+: ?set-x-vel-left ( player ? -- player )
+    [ PLAYER-SPEED neg >>x-vel ] when ;
+
+: ?set-x-vel-right ( player ? -- player )
+    [ PLAYER-SPEED >>x-vel ] when ;
+
+: ?continue-left ( player -- player )
+    KEY_D KEY_A released-and-down? ?set-x-vel-left ;
+
+: ?continue-right ( player -- player )
+    KEY_A KEY_D released-and-down? ?set-x-vel-right ;
+
+: ?move-left ( player -- player )
+    KEY_A is-key-pressed ?set-x-vel-left ?continue-right ;
+
+: ?move-right ( player -- player )
+    KEY_D is-key-pressed ?set-x-vel-right ?continue-left ;
+
+: ?stay-still ( player -- player )
+    { KEY_D KEY_A } all-keys-up? [ 0 >>x-vel ] when ;
+
+: update-position ( player -- )
+    dup '[ _ x-vel>> + ] change-position-x drop ;
+
+: ?move ( player -- player )
+    dup ?move-left ?move-right ?stay-still update-position ;
 
 M: player update
-    {
-        [ ?jump ]
-        [ ?fall ]
-        [ on-ground<< ]
-        [ ?separate-from-ground ]
-    } cleave ;
+    ?move ?jump ?fall ?separate-from-ground ;
 
 TUPLE: ground < entity ;
 
 : <ground> ( -- ground )
-    0 500 <Vector2> 800 100 <Vector2> ground boa ;
+    ground new
+        0 500 <Vector2>   >>position
+        800 100 <Vector2> >>size ;
 
 M: ground draw
     get-position-and-size DARKGREEN draw-rectangle-v ;
@@ -150,7 +196,7 @@ M: ground update
         32 <hashtable> >>entities
             dup <player> "player" add-entity
             dup <ground> "ground" add-entity
-        +playing+ new >>state
+        +playing+ new  >>state
     game-state set ;
 
 : game-draw ( -- )
