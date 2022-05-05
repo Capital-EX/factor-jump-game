@@ -1,16 +1,16 @@
 ! Copyright (C) 2022 Your name.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors assocs combinators continuations hash-sets
-hashtables kernel math math.vectors namespaces prettyprint
-raylib sequences sets ui.tools.listener vocabs.loader ;
+USING: accessors assocs combinators combinators.smart
+continuations hash-sets hashtables kernel math math.vectors
+namespaces prettyprint raylib sequences sets ui.tools.listener
+vocabs.loader ;
 FROM: namespaces => set ;
 IN: jump-game
 
 : unpair ( p -- x y )
     [ first ] [ second ] bi ;
 
-: jumping? ( -- ? )
-    KEY_SPACE is-key-down ;
+
 
 GENERIC: draw ( drawable -- )
 GENERIC: update ( updatable -- )
@@ -51,6 +51,9 @@ TUPLE: entity
     { position Vector2 }
     { size Vector2 } ;
 
+: change-position-y ( ent quot -- ent )
+    '[ [ _ call( ... x -- x ) ] change-y ] change-position ;
+
 : get-position-and-size ( ent -- pos size )
     [ position>> ] [ size>> ] bi ;
 
@@ -79,31 +82,49 @@ M: player draw
 : get-ground ( -- ground )
     "ground" get-entity ;
 
-: fall ( player -- player )
-    dup '[ [ _ y-vel>> + ] change-y ] change-position
-    [ dup 30 < [ 4 + ] [ drop 30 ] if ] change-y-vel ;
+: get-distance-from-ground ( player -- dist )
+    get-ground [ get-bottom ] [ get-top ] bi* - ;
 
-: ?fall ( player -- player )
-    dup on-ground>> not [ fall ] when ;
+: apply-velocity ( player -- player )
+    dup '[ _ y-vel>> + ] change-position-y ;
+
+: (apply-gravity) ( y-vel -- y-vel' )
+    [ 30 < ] [ 4 + ] [ 30 ] smart-if* ;
+
+: apply-gravity ( player -- player )
+    [ (apply-gravity) ] change-y-vel ;
 
 : on-ground? ( player -- ? )
-    get-ground [ get-bottom ] [ get-top ] bi* > ;
+     get-distance-from-ground 0 > ;
+
+: fall ( player -- player )
+    apply-velocity apply-gravity ;
+
+: ?fall ( player -- ? )
+    dup on-ground>> not [ fall ] when on-ground? ;
 
 : separate-from-ground ( player -- )
-    dup get-ground [ get-bottom ] [ get-top ] bi* -
-        swap [ [ swap - ] change-y ] change-position drop ;
+    dup get-distance-from-ground '[ _ - ] change-position-y drop ;
 
 : ?separate-from-ground ( player -- )
-    dup on-ground>> [ separate-from-ground ] [ drop ] if ;
+    [ on-ground>> ] [ separate-from-ground ] smart-when* ;
 
-: ?jump ( player -- player )
-    dup on-ground>> jumping? and [ -30 >>y-vel f >>on-ground ] when ;
+: jumping? ( player -- ? )
+    on-ground>> KEY_SPACE is-key-down and ;
 
-: apply-gravity ( player -- )
-    ?fall on-ground? >>on-ground ?separate-from-ground ;
+: jump ( player -- )
+    -30 >>y-vel f >>on-ground drop ;
+
+: ?jump ( player -- )
+    [ jumping? ] [ jump ] smart-when* ;
 
 M: player update
-    dup ?jump apply-gravity ;
+    {
+        [ ?jump ]
+        [ ?fall ]
+        [ on-ground<< ]
+        [ ?separate-from-ground ]
+    } cleave ;
 
 TUPLE: ground < entity ;
 
