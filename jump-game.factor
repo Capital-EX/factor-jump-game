@@ -96,9 +96,14 @@ M: player draw
 : ?separate-from-ground ( player -- )
     dup on-ground>> [ separate-from-ground ] [ drop ] if ;
 
+: ?jump ( player -- player )
+    dup on-ground>> jumping? and [ -30 >>y-vel f >>on-ground ] when ;
+
+: apply-gravity ( player -- )
+    ?fall on-ground? >>on-ground ?separate-from-ground ;
+
 M: player update
-    dup on-ground>> jumping? and [ -30 >>y-vel f >>on-ground ] when
-    dup ?fall on-ground? >>on-ground ?separate-from-ground ;
+    dup ?jump apply-gravity ;
 
 TUPLE: ground < entity ;
 
