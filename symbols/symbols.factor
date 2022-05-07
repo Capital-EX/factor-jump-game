@@ -1,6 +1,6 @@
 ! Copyright (C) 2022 Capital Ex.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: ;
+USING: math.vectors namespaces ;
 IN: factor-jump-game.symbols
 
 SYMBOL: screen-size
