@@ -6,8 +6,15 @@ IN: factor-jump-game.state
 
 TUPLE: state
     { entities assoc }
-    { score integer }
+    { score integer initial: 0 }
+    { health integer initial: 3 }
     { state maybe{ +game-state+ } } ;
+
+: get-health ( -- health )
+    game-state get health>> ;
+
+: get-score ( -- score )
+    game-state get score>> ;
 
 : get-entities ( -- entities )
     game-state get entities>> values ;
