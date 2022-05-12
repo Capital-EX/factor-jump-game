@@ -6,6 +6,7 @@ IN: factor-jump-game.symbols
 SYMBOL: screen-size
 SYMBOL: game-state
 SYMBOL: entities
+SYMBOLS: enemy-count ;
 TUPLE: +playing+ ; TUPLE: +game-over+ ;
 UNION: +game-state+ +playing+ +game-over+ ;
 
