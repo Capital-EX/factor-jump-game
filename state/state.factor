@@ -6,11 +6,10 @@ IN: factor-jump-game.state
 
 TUPLE: state
     { entities assoc }
-    { score integer initial: 0 }
+    { score float initial: 0.0 }
     { health integer initial: 3 }
     { state maybe{ +game-state+ } }
     { spawn-timer float }
-    { score-timer float }
     ;
 
 : add-entity ( ent name -- )

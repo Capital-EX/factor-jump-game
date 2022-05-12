@@ -15,23 +15,18 @@ IN: factor-jump-game
     800 len x + - :> x'
     text x' ;
 
-: score>text ( score -- text )
-    "Score: %d" sprintf ; inline
+: score>text ( score -- text ) >fixnum "Score: %d" sprintf ; inline
+: health>text ( health -- text ) "Health: %d" sprintf ; inline
 
 : draw-score ( -- )
-    get-score
-        score>text 10 10 32 BLACK draw-text ;
-
-: health>text ( health -- text )
-    "Health: %d" sprintf ; inline
+    get-score score>text 10 10 32 BLACK draw-text ;
 
 : draw-health ( -- )
     get-health
         health>text 10 from-right 10 32 BLACK draw-text ;
 
 : draw-ui ( -- )
-     draw-score
-     draw-health ;
+    draw-score draw-health ;
 
 : open-window ( -- )
     screen-size get unpair "Jump Game" init-window
@@ -40,20 +35,27 @@ IN: factor-jump-game
 : clear-window ( -- )
     SKYBLUE clear-background ;
 
+: ?spawn-enemy ( game-state -- game-state )
+    dup spawn-timer>> 0 <= [ spawn-enemy 3 >>spawn-timer ] when ;
+
+: count-down-spawner ( game-state -- game-state )
+    [ get-frame-time - ] change-spawn-timer ;
+
+: increase-score ( game-state -- game-state )
+    [ drop get-time ] change-score ;
+
 : update-timers ( -- )
     game-state get
-        [ get-frame-time - ] change-spawn-timer
-        [ drop get-time ] change-score-timer
-        [ dup 0 <= [ spawn-enemy drop 3 ] when ] change-spawn-timer
+        count-down-spawner increase-score ?spawn-enemy
     drop ;
 
 : game-load ( -- )
     800 600 <Vector2> screen-size set
     0 enemy-count set
     state new
-        32 <hashtable> >>entities
-        +playing+ new >>state
-        3.0 >>spawn-timer
+        32 <hashtable>  >>entities
+        +playing+ new   >>state
+        3.0             >>spawn-timer
     game-state set
     <player> "player" add-entity
     <ground> "ground" add-entity ;
@@ -64,14 +66,12 @@ IN: factor-jump-game
     end-drawing ;
 
 : game-update ( -- )
-    update-entities
-    update-timers ;
+    update-entities update-timers ;
 
 : main-loop ( -- )
     game-load open-window clear-window
     [
-        game-draw
-        game-update
+        game-draw game-update
         window-should-close not
     ] loop ;
 
