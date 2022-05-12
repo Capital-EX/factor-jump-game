@@ -10,8 +10,6 @@ TUPLE: ground < entity ;
         0 500 <Vector2>   >>position
         800 100 <Vector2> >>size ;
 
-M: ground draw
+INSTANCE: ground drawable
+M: ground (draw)
     get-position-and-size DARKGREEN draw-rectangle-v ;
-
-M: ground update
-    drop ;

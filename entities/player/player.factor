@@ -21,9 +21,6 @@ CONSTANT: JUMP-FORCE 30
         0.0              >>y-vel
         0.0              >>x-vel ;
 
-M: player draw
-    get-position-and-size BLUE draw-rectangle-v ;
-
 : get-ground ( -- ground )
     "ground" get-entity ;
 
@@ -96,5 +93,10 @@ M: player draw
 : ?move ( player -- player )
     dup ?move-left ?move-right ?stay-still update-position ;
 
-M: player update
+INSTANCE: player drawable
+M: player (draw)
+    get-position-and-size BLUE draw-rectangle-v ;
+
+INSTANCE: player updatable
+M: player (update)
     ?move ?jump ?fall ?separate-from-ground ;

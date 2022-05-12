@@ -28,6 +28,12 @@ TUPLE: entity
 : get-left ( ent -- left )
     position>> x>> ;
 
-
+MIXIN: drawable
+GENERIC: (draw) ( drawable -- )
 GENERIC: draw ( drawable -- )
+M: drawable draw (draw) ;
+
+MIXIN: updatable
+GENERIC: (update) ( updatable -- )
 GENERIC: update ( updatable -- )
+M: updatable update (update) ;
